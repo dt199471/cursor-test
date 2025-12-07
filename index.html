@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌈 キラキラオセロ ✨</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --candy-pink: #ffb3c1;
+      --candy-yellow: #ffe480;
+      --candy-mint: #9ff3e3;
+      --candy-sky: #b4d5ff;
+      --candy-purple: #d3b3ff;
+      --board-green: #7ac784;
+      --board-dark: #5ca56a;
+      --shadow: 0 12px 30px rgba(0,0,0,0.15);
+    }
+    body {
+      font-family: 'M PLUS Rounded 1c', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 20%, #fff3d9 0%, #ffe4f3 30%, #dbefff 60%, #f8e5ff 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow: hidden;
+      color: #444;
+    }
+    .bg-floating {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .bubble {
+      position: absolute;
+      font-size: 24px;
+      opacity: 0.6;
+      animation: float 7s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-25px) scale(1.05); }
+    }
+    .app {
+      position: relative;
+      z-index: 1;
+      width: min(960px, 92vw);
+      background: #fff;
+      border-radius: 28px;
+      padding: 28px 26px 30px;
+      box-shadow: var(--shadow), 0 0 0 5px rgba(255,255,255,0.8);
+      border: 3px solid #fff;
+    }
+    .title {
+      text-align: center;
+      font-size: clamp(26px, 6vw, 38px);
+      font-weight: 800;
+      color: #ff5fa2;
+      text-shadow: 2px 2px 0 #fff, 5px 5px 12px rgba(0,0,0,0.12);
+      letter-spacing: 2px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #6b6b6b;
+      margin-bottom: 18px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .scoreboard {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .player {
+      background: linear-gradient(135deg, #fff 0%, #f6f6f6 100%);
+      border-radius: 20px;
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border: 2px solid rgba(0,0,0,0.05);
+      min-height: 130px;
+    }
+    .player.active {
+      transform: translateY(-4px) scale(1.03);
+      box-shadow: 0 16px 30px rgba(255,95,162,0.25);
+    }
+    .player.cat {
+      background: linear-gradient(145deg, #fff7f9, #ffe4ec);
+    }
+    .player.chick {
+      background: linear-gradient(145deg, #fffbee, #fff0c8);
+    }
+    .p-icon { font-size: 42px; margin-bottom: 6px; }
+    .p-name { font-weight: 700; color: #555; margin-bottom: 4px; }
+    .p-score { font-size: 28px; font-weight: 800; color: #ff5fa2; }
+    .vs {
+      font-weight: 800;
+      color: #ff8c5f;
+      font-size: 18px;
+      padding: 10px;
+      background: #fff4eb;
+      border-radius: 12px;
+      border: 2px dashed #ffc4a7;
+    }
+    .board-wrap {
+      background: #f7fff6;
+      border-radius: 24px;
+      padding: 12px;
+      box-shadow: inset 0 0 0 3px #e5ffe1, var(--shadow);
+      border: 2px solid #f1f1f1;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 5px;
+      background: var(--board-dark);
+      padding: 8px;
+      border-radius: 18px;
+      box-shadow: inset 0 4px 12px rgba(0,0,0,0.25);
+    }
+    .cell {
+      width: clamp(36px, 9vw, 60px);
+      height: clamp(36px, 9vw, 60px);
+      background: var(--board-green);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .cell:hover { transform: translateY(-2px); background: #8cdd94; }
+    .cell.valid::after {
+      content: '';
+      width: 18px;
+      height: 18px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 50%;
+      animation: pulse 1s ease-in-out infinite;
+      box-shadow: 0 0 0 6px rgba(255,255,255,0.2);
+    }
+    @keyframes pulse {
+      0%,100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.15); opacity: 0.9; }
+    }
+    .piece {
+      width: 80%;
+      height: 80%;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: clamp(22px, 5vw, 28px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+      animation: drop 0.25s ease-out;
+      border: 3px solid rgba(0,0,0,0.1);
+    }
+    @keyframes drop {
+      0% { transform: scale(0) rotate(-90deg); }
+      60% { transform: scale(1.15) rotate(5deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .piece.cat {
+      background: linear-gradient(145deg, #fff, #f2f2f2);
+      border-color: #f5b7c6;
+    }
+    .piece.chick {
+      background: linear-gradient(145deg, #fff6d6, #ffe8a3);
+      border-color: #ffd45f;
+    }
+    .piece.flip { animation: flip 0.45s ease-in-out; }
+    @keyframes flip {
+      0% { transform: rotateY(0); }
+      50% { transform: rotateY(90deg) scale(1.05); }
+      100% { transform: rotateY(0); }
+    }
+    .info-row {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+    }
+    .turn {
+      padding: 10px 18px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #fff8fb, #ffe6f1);
+      color: #ff4f9b;
+      font-weight: 800;
+      box-shadow: var(--shadow);
+    }
+    .btn {
+      border: none;
+      outline: none;
+      padding: 12px 22px;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      color: #fff;
+      background: linear-gradient(135deg, #52d1ff, #34c3a0);
+      box-shadow: 0 10px 20px rgba(52,195,160,0.3);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 14px 26px rgba(52,195,160,0.35); }
+    .btn:active { transform: translateY(0); }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 10;
+    }
+    .modal.show { opacity: 1; pointer-events: auto; }
+    .modal-box {
+      background: #fff;
+      padding: 28px 30px;
+      border-radius: 24px;
+      width: min(420px, 90vw);
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+      animation: pop 0.35s ease;
+    }
+    @keyframes pop {
+      0% { transform: scale(0.6); opacity: 0; }
+      60% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .modal-icon { font-size: 58px; margin-bottom: 10px; }
+    .modal-title { font-size: 24px; font-weight: 800; margin-bottom: 6px; color: #ff5fa2; }
+    .modal-score { color: #666; margin-bottom: 16px; }
+    .pass-toast {
+      position: fixed;
+      left: 50%;
+      top: 18%;
+      transform: translateX(-50%) translateY(-20px);
+      background: #fff7d7;
+      padding: 14px 20px;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      border: 2px solid #ffe49d;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 9;
+    }
+    .pass-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    @media (max-width: 640px) {
+      .scoreboard { grid-template-columns: 1fr; }
+      .vs { justify-self: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-floating" id="bg"></div>
+  <main class="app">
+    <div class="title">🌈 キラキラオセロ ✨</div>
+    <p class="subtitle">ねこちゃん vs ひよこちゃん</p>
+
+    <section class="scoreboard">
+      <div class="player cat" id="player-cat">
+        <div class="p-icon">🐱</div>
+        <div class="p-name">ねこちゃん</div>
+        <div class="p-score" id="score-cat">2</div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="player chick" id="player-chick">
+        <div class="p-icon">🐤</div>
+        <div class="p-name">ひよこちゃん</div>
+        <div class="p-score" id="score-chick">2</div>
+      </div>
+    </section>
+
+    <section class="board-wrap">
+      <div class="board" id="board"></div>
+    </section>
+
+    <div class="info-row">
+      <div class="turn" id="turn">🐱 ねこちゃんのばん！</div>
+      <button class="btn" id="restart">🔁 もういっかい</button>
+    </div>
+  </main>
+
+  <div class="modal" id="modal">
+    <div class="modal-box">
+      <div class="modal-icon" id="modal-icon">🎉</div>
+      <div class="modal-title" id="modal-title">やったー！</div>
+      <div class="modal-score" id="modal-score"></div>
+      <button class="btn" id="again">もういっかい！</button>
+    </div>
+  </div>
+
+  <div class="pass-toast" id="pass-toast"></div>
+
+  <script>
+    const EMPTY = 0;
+    const CAT = 1;     // Black equivalent
+    const CHICK = 2;   // White equivalent
+
+    let board = [];
+    let currentPlayer = CAT;
+    let gameOver = false;
+
+    const directions = [
+      [-1,-1],[-1,0],[-1,1],
+      [0,-1],       [0,1],
+      [1,-1],[1,0],[1,1]
+    ];
+
+    function init() {
+      board = Array.from({ length: 8 }, () => Array(8).fill(EMPTY));
+      board[3][3] = CHICK;
+      board[3][4] = CAT;
+      board[4][3] = CAT;
+      board[4][4] = CHICK;
+      currentPlayer = CAT;
+      gameOver = false;
+      renderBoard();
+      updateScores();
+      updateTurn();
+      sprinkleBubbles();
+    }
+
+    function sprinkleBubbles() {
+      const bg = document.getElementById('bg');
+      bg.innerHTML = '';
+      const icons = ['🍭','🍩','⭐','💫','🍬','🎈','🌟','🍓'];
+      for (let i = 0; i < 16; i++) {
+        const b = document.createElement('span');
+        b.className = 'bubble';
+        b.textContent = icons[Math.floor(Math.random() * icons.length)];
+        b.style.left = Math.random() * 100 + '%';
+        b.style.top = Math.random() * 100 + '%';
+        b.style.animationDelay = Math.random() * 4 + 's';
+        b.style.animationDuration = 5 + Math.random() * 3 + 's';
+        bg.appendChild(b);
+      }
+    }
+
+    function isInside(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+
+    function collectFlips(r, c, player) {
+      if (board[r][c] !== EMPTY) return [];
+      const enemy = player === CAT ? CHICK : CAT;
+      let flips = [];
+      directions.forEach(([dr, dc]) => {
+        let path = [];
+        let nr = r + dr;
+        let nc = c + dc;
+        while (isInside(nr, nc) && board[nr][nc] === enemy) {
+          path.push([nr, nc]);
+          nr += dr; nc += dc;
+        }
+        if (path.length && isInside(nr, nc) && board[nr][nc] === player) {
+          flips = flips.concat(path);
+        }
+      });
+      return flips;
+    }
+
+    function validMoves(player) {
+      const moves = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          if (collectFlips(r, c, player).length) moves.push([r, c]);
+        }
+      }
+      return moves;
+    }
+
+    function renderBoard() {
+      const boardEl = document.getElementById('board');
+      boardEl.innerHTML = '';
+      const moves = validMoves(currentPlayer);
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.r = r;
+          cell.dataset.c = c;
+          if (moves.some(([mr, mc]) => mr === r && mc === c)) {
+            cell.classList.add('valid');
+          }
+          if (board[r][c] !== EMPTY) {
+            const piece = document.createElement('div');
+            const isCat = board[r][c] === CAT;
+            piece.className = 'piece ' + (isCat ? 'cat' : 'chick');
+            piece.textContent = isCat ? '🐱' : '🐤';
+            cell.appendChild(piece);
+          }
+          cell.addEventListener('click', () => onCellClick(r, c));
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+
+    function onCellClick(r, c) {
+      if (gameOver) return;
+      const flips = collectFlips(r, c, currentPlayer);
+      if (!flips.length) return;
+
+      board[r][c] = currentPlayer;
+      flips.forEach(([fr, fc]) => {
+        board[fr][fc] = currentPlayer;
+      });
+      renderBoard();
+      updateScores();
+      switchPlayer();
+    }
+
+    function switchPlayer() {
+      const next = currentPlayer === CAT ? CHICK : CAT;
+      const nextMoves = validMoves(next);
+      if (nextMoves.length) {
+        currentPlayer = next;
+        updateTurn();
+        renderBoard();
+        return;
+      }
+      const currMoves = validMoves(currentPlayer);
+      if (currMoves.length) {
+        showPass(next);
+        updateTurn();
+        renderBoard();
+        return;
+      }
+      finishGame();
+    }
+
+    function showPass(player) {
+      const toast = document.getElementById('pass-toast');
+      toast.textContent = player === CAT ? '🐱 ねこちゃんはおけないよ…' : '🐤 ひよこちゃんはおけないよ…';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1500);
+    }
+
+    function updateScores() {
+      let cat = 0, chick = 0;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          if (board[r][c] === CAT) cat++;
+          if (board[r][c] === CHICK) chick++;
+        }
+      }
+      document.getElementById('score-cat').textContent = cat;
+      document.getElementById('score-chick').textContent = chick;
+    }
+
+    function updateTurn() {
+      const turn = document.getElementById('turn');
+      const catBox = document.getElementById('player-cat');
+      const chickBox = document.getElementById('player-chick');
+      if (currentPlayer === CAT) {
+        turn.textContent = '🐱 ねこちゃんのばん！';
+        catBox.classList.add('active');
+        chickBox.classList.remove('active');
+      } else {
+        turn.textContent = '🐤 ひよこちゃんのばん！';
+        chickBox.classList.add('active');
+        catBox.classList.remove('active');
+      }
+    }
+
+    function finishGame() {
+      gameOver = true;
+      const cat = parseInt(document.getElementById('score-cat').textContent, 10);
+      const chick = parseInt(document.getElementById('score-chick').textContent, 10);
+      const modal = document.getElementById('modal');
+      const icon = document.getElementById('modal-icon');
+      const title = document.getElementById('modal-title');
+      const score = document.getElementById('modal-score');
+      if (cat > chick) { icon.textContent = '🐱🏆'; title.textContent = 'ねこちゃんのかち！'; }
+      else if (chick > cat) { icon.textContent = '🐤🏆'; title.textContent = 'ひよこちゃんのかち！'; }
+      else { icon.textContent = '🤝'; title.textContent = 'ひきわけ！'; }
+      score.textContent = `🐱 ${cat} - ${chick} 🐤`;
+      modal.classList.add('show');
+    }
+
+    function restart() {
+      document.getElementById('modal').classList.remove('show');
+      init();
+    }
+
+    document.getElementById('restart').addEventListener('click', restart);
+    document.getElementById('again').addEventListener('click', restart);
+    document.getElementById('modal').addEventListener('click', (e) => {
+      if (e.target.id === 'modal') restart();
+    });
+
+    init();
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐼 もふもふオセロ 🐰</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --pink-light: #FFE4EC;
+            --pink-medium: #FFB6C1;
+            --pink-dark: #FF69B4;
+            --mint: #98FB98;
+            --lavender: #E6E6FA;
+            --sky: #87CEEB;
+            --peach: #FFDAB9;
+            --board-green: #7EC884;
+            --board-dark: #5BA462;
+            --panda-white: #FFFFFF;
+            --panda-black: #2D2D2D;
+            --bunny-pink: #FFB6C1;
+        }
+
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--pink-light) 0%, var(--lavender) 50%, var(--sky) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Floating decorations */
+        .decorations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .floating {
+            position: absolute;
+            font-size: 2rem;
+            animation: float 6s ease-in-out infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        /* Title */
+        .title {
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            font-weight: 900;
+            color: var(--pink-dark);
+            text-shadow: 
+                3px 3px 0 white,
+                -1px -1px 0 white,
+                1px -1px 0 white,
+                -1px 1px 0 white;
+            margin-bottom: 10px;
+            z-index: 1;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 20px;
+            z-index: 1;
+        }
+
+        /* Game container */
+        .game-container {
+            background: white;
+            border-radius: 30px;
+            padding: 25px;
+            box-shadow: 
+                0 20px 60px rgba(255, 105, 180, 0.3),
+                0 0 0 5px var(--pink-medium);
+            z-index: 1;
+        }
+
+        /* Score board */
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 20px;
+        }
+
+        .player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 25px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .player.active {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .player-panda {
+            background: linear-gradient(135deg, #f0f0f0, #d0d0d0);
+        }
+
+        .player-bunny {
+            background: linear-gradient(135deg, var(--pink-light), var(--pink-medium));
+        }
+
+        .player-icon {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+        }
+
+        .player-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #555;
+        }
+
+        .player-score {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--pink-dark);
+        }
+
+        .vs {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--pink-dark);
+        }
+
+        /* Game board */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+            background: var(--board-dark);
+            padding: 10px;
+            border-radius: 20px;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .cell {
+            width: clamp(35px, 8vw, 55px);
+            height: clamp(35px, 8vw, 55px);
+            background: var(--board-green);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .cell:hover {
+            background: #8FD895;
+            transform: scale(1.05);
+        }
+
+        .cell.valid-move {
+            background: #A8E6A3;
+        }
+
+        .cell.valid-move::after {
+            content: '';
+            width: 15px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+
+        /* Pieces */
+        .piece {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            animation: placepiece 0.3s ease-out;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        @keyframes placepiece {
+            0% { transform: scale(0) rotate(180deg); }
+            50% { transform: scale(1.2) rotate(0deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        .piece.flip {
+            animation: flippiece 0.5s ease-in-out;
+        }
+
+        @keyframes flippiece {
+            0% { transform: rotateY(0deg); }
+            50% { transform: rotateY(90deg) scale(1.1); }
+            100% { transform: rotateY(0deg); }
+        }
+
+        .piece.panda {
+            background: linear-gradient(145deg, #ffffff, #e0e0e0);
+            border: 3px solid #333;
+        }
+
+        .piece.bunny {
+            background: linear-gradient(145deg, #FFD0DC, #FFB6C1);
+            border: 3px solid #FF69B4;
+        }
+
+        /* Turn indicator */
+        .turn-indicator {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #555;
+            padding: 10px 20px;
+            background: var(--peach);
+            border-radius: 15px;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 105, 180, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(255, 105, 180, 0.6); }
+        }
+
+        /* Buttons */
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'Zen Maru Gothic', sans-serif;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-restart {
+            background: linear-gradient(135deg, var(--mint), #7ECE7E);
+            color: white;
+        }
+
+        .btn-restart:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Win modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            animation: modalPop 0.5s ease-out;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        @keyframes modalPop {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: celebrate 0.5s ease-in-out infinite;
+        }
+
+        @keyframes celebrate {
+            0%, 100% { transform: rotate(-10deg); }
+            50% { transform: rotate(10deg); }
+        }
+
+        .modal-title {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--pink-dark);
+            margin-bottom: 10px;
+        }
+
+        .modal-score {
+            font-size: 1.5rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            z-index: 101;
+        }
+
+        /* Pass message */
+        .pass-message {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--peach);
+            padding: 20px 40px;
+            border-radius: 20px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #555;
+            z-index: 50;
+            animation: fadeInOut 1.5s ease-in-out;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .pass-message.show {
+            display: block;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            20%, 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating decorations -->
+    <div class="decorations" id="decorations"></div>
+
+    <h1 class="title">🐼 もふもふオセロ 🐰</h1>
+    <p class="subtitle">パンダさん vs うさぎさん</p>
+
+    <div class="game-container">
+        <div class="score-board">
+            <div class="player player-panda" id="player-panda">
+                <span class="player-icon">🐼</span>
+                <span class="player-name">パンダさん</span>
+                <span class="player-score" id="score-panda">2</span>
+            </div>
+            <span class="vs">⚔️</span>
+            <div class="player player-bunny" id="player-bunny">
+                <span class="player-icon">🐰</span>
+                <span class="player-name">うさぎさん</span>
+                <span class="player-score" id="score-bunny">2</span>
+            </div>
+        </div>
+
+        <div class="board" id="board"></div>
+
+        <div class="turn-indicator" id="turn-indicator">
+            🐼 パンダさんのばん！
+        </div>
+
+        <div class="buttons">
+            <button class="btn btn-restart" onclick="restartGame()">
+                🔄 もういっかい！
+            </button>
+        </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-icon" id="modal-icon">🎉</div>
+            <h2 class="modal-title" id="modal-title">やったね！</h2>
+            <p class="modal-score" id="modal-score"></p>
+            <button class="btn btn-restart" onclick="closeModalAndRestart()">
+                🔄 もういっかい！
+            </button>
+        </div>
+    </div>
+
+    <!-- Pass Message -->
+    <div class="pass-message" id="pass-message"></div>
+
+    <script>
+        // Game constants
+        const EMPTY = 0;
+        const PANDA = 1;  // Black equivalent
+        const BUNNY = 2;  // White equivalent
+
+        // Game state
+        let board = [];
+        let currentPlayer = PANDA;
+        let gameOver = false;
+
+        // Directions for checking valid moves
+        const directions = [
+            [-1, -1], [-1, 0], [-1, 1],
+            [0, -1],           [0, 1],
+            [1, -1],  [1, 0],  [1, 1]
+        ];
+
+        // Initialize game
+        function initGame() {
+            board = Array(8).fill(null).map(() => Array(8).fill(EMPTY));
+            // Starting position
+            board[3][3] = BUNNY;
+            board[3][4] = PANDA;
+            board[4][3] = PANDA;
+            board[4][4] = BUNNY;
+            currentPlayer = PANDA;
+            gameOver = false;
+            renderBoard();
+            updateScores();
+            updateTurnIndicator();
+            createDecorations();
+        }
+
+        // Create floating decorations
+        function createDecorations() {
+            const decorations = document.getElementById('decorations');
+            decorations.innerHTML = '';
+            const emojis = ['⭐', '💖', '✨', '🌸', '🎀', '💫', '🌟', '💕'];
+            
+            for (let i = 0; i < 15; i++) {
+                const emoji = document.createElement('span');
+                emoji.className = 'floating';
+                emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                emoji.style.left = Math.random() * 100 + '%';
+                emoji.style.top = Math.random() * 100 + '%';
+                emoji.style.animationDelay = Math.random() * 5 + 's';
+                emoji.style.animationDuration = (4 + Math.random() * 4) + 's';
+                decorations.appendChild(emoji);
+            }
+        }
+
+        // Render the board
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            
+            const validMoves = getValidMoves(currentPlayer);
+            
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    // Check if valid move
+                    if (validMoves.some(m => m.row === row && m.col === col)) {
+                        cell.classList.add('valid-move');
+                    }
+                    
+                    // Add piece if exists
+                    if (board[row][col] !== EMPTY) {
+                        const piece = document.createElement('div');
+                        piece.className = 'piece ' + (board[row][col] === PANDA ? 'panda' : 'bunny');
+                        piece.textContent = board[row][col] === PANDA ? '🐼' : '🐰';
+                        cell.appendChild(piece);
+                    }
+                    
+                    cell.addEventListener('click', () => handleClick(row, col));
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        // Check if position is valid
+        function isValidPosition(row, col) {
+            return row >= 0 && row < 8 && col >= 0 && col < 8;
+        }
+
+        // Get pieces to flip for a move
+        function getPiecesToFlip(row, col, player) {
+            if (board[row][col] !== EMPTY) return [];
+            
+            const opponent = player === PANDA ? BUNNY : PANDA;
+            let allFlips = [];
+            
+            for (const [dr, dc] of directions) {
+                let flips = [];
+                let r = row + dr;
+                let c = col + dc;
+                
+                while (isValidPosition(r, c) && board[r][c] === opponent) {
+                    flips.push({ row: r, col: c });
+                    r += dr;
+                    c += dc;
+                }
+                
+                if (flips.length > 0 && isValidPosition(r, c) && board[r][c] === player) {
+                    allFlips = allFlips.concat(flips);
+                }
+            }
+            
+            return allFlips;
+        }
+
+        // Get all valid moves for a player
+        function getValidMoves(player) {
+            const moves = [];
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if (getPiecesToFlip(row, col, player).length > 0) {
+                        moves.push({ row, col });
+                    }
+                }
+            }
+            return moves;
+        }
+
+        // Handle cell click
+        function handleClick(row, col) {
+            if (gameOver) return;
+            
+            const flips = getPiecesToFlip(row, col, currentPlayer);
+            if (flips.length === 0) return;
+            
+            // Place piece
+            board[row][col] = currentPlayer;
+            
+            // Flip pieces with animation
+            setTimeout(() => {
+                flips.forEach(flip => {
+                    board[flip.row][flip.col] = currentPlayer;
+                });
+                renderBoard();
+                updateScores();
+                
+                // Switch player
+                switchPlayer();
+            }, 100);
+            
+            renderBoard();
+            playSound('place');
+        }
+
+        // Switch to next player
+        function switchPlayer() {
+            const nextPlayer = currentPlayer === PANDA ? BUNNY : PANDA;
+            const nextMoves = getValidMoves(nextPlayer);
+            
+            if (nextMoves.length > 0) {
+                currentPlayer = nextPlayer;
+                updateTurnIndicator();
+            } else {
+                // Check if current player can still play
+                const currentMoves = getValidMoves(currentPlayer);
+                if (currentMoves.length > 0) {
+                    showPassMessage(nextPlayer);
+                } else {
+                    // Game over
+                    endGame();
+                }
+            }
+            
+            renderBoard();
+        }
+
+        // Show pass message
+        function showPassMessage(player) {
+            const msg = document.getElementById('pass-message');
+            const name = player === PANDA ? '🐼 パンダさん' : '🐰 うさぎさん';
+            msg.textContent = `${name}はおけるところがないよ！`;
+            msg.classList.add('show');
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 1500);
+        }
+
+        // Update scores
+        function updateScores() {
+            let pandaScore = 0;
+            let bunnyScore = 0;
+            
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if (board[row][col] === PANDA) pandaScore++;
+                    if (board[row][col] === BUNNY) bunnyScore++;
+                }
+            }
+            
+            document.getElementById('score-panda').textContent = pandaScore;
+            document.getElementById('score-bunny').textContent = bunnyScore;
+        }
+
+        // Update turn indicator
+        function updateTurnIndicator() {
+            const indicator = document.getElementById('turn-indicator');
+            const pandaPlayer = document.getElementById('player-panda');
+            const bunnyPlayer = document.getElementById('player-bunny');
+            
+            if (currentPlayer === PANDA) {
+                indicator.textContent = '🐼 パンダさんのばん！';
+                pandaPlayer.classList.add('active');
+                bunnyPlayer.classList.remove('active');
+            } else {
+                indicator.textContent = '🐰 うさぎさんのばん！';
+                bunnyPlayer.classList.add('active');
+                pandaPlayer.classList.remove('active');
+            }
+        }
+
+        // End game
+        function endGame() {
+            gameOver = true;
+            
+            const pandaScore = parseInt(document.getElementById('score-panda').textContent);
+            const bunnyScore = parseInt(document.getElementById('score-bunny').textContent);
+            
+            const modal = document.getElementById('modal');
+            const icon = document.getElementById('modal-icon');
+            const title = document.getElementById('modal-title');
+            const score = document.getElementById('modal-score');
+            
+            if (pandaScore > bunnyScore) {
+                icon.textContent = '🐼🎉';
+                title.textContent = 'パンダさんのかち！';
+            } else if (bunnyScore > pandaScore) {
+                icon.textContent = '🐰🎉';
+                title.textContent = 'うさぎさんのかち！';
+            } else {
+                icon.textContent = '🤝';
+                title.textContent = 'ひきわけ！';
+            }
+            
+            score.textContent = `🐼 ${pandaScore} - ${bunnyScore} 🐰`;
+            
+            modal.classList.add('show');
+            createConfetti();
+            playSound('win');
+        }
+
+        // Create confetti
+        function createConfetti() {
+            const colors = ['#FF69B4', '#FFB6C1', '#98FB98', '#87CEEB', '#FFD700', '#FF6B6B'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = '-10px';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                confetti.style.animation = `fall ${2 + Math.random() * 2}s linear forwards`;
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => confetti.remove(), 4000);
+            }
+            
+            // Add confetti animation
+            if (!document.getElementById('confetti-style')) {
+                const style = document.createElement('style');
+                style.id = 'confetti-style';
+                style.textContent = `
+                    @keyframes fall {
+                        to {
+                            transform: translateY(100vh) rotate(720deg);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        // Play sound (placeholder - you can add actual sounds)
+        function playSound(type) {
+            // Sound effects can be added here
+            // For now, just visual feedback
+        }
+
+        // Close modal and restart
+        function closeModalAndRestart() {
+            document.getElementById('modal').classList.remove('show');
+            restartGame();
+        }
+
+        // Restart game
+        function restartGame() {
+            initGame();
+        }
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
+
