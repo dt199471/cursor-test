@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍩 おかしなオセロ 🍪</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #FFF8E1;
+            --board-color: #8D6E63;
+            --cell-color: #D7CCC8;
+            --highlight-color: #FFECB3;
+            --donut-color: #5D4037;
+            --cookie-color: #FBC02D;
+            --text-color: #5D4037;
+            --accent-pink: #FF80AB;
+        }
+
+        body {
+            font-family: 'Kiwi Maru', serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(var(--highlight-color) 20%, transparent 20%),
+                              radial-gradient(var(--highlight-color) 20%, transparent 20%);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 0 #FFF;
+            animation: floatTitle 3s ease-in-out infinite;
+        }
+
+        @keyframes floatTitle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(93, 64, 55, 0.15);
+            text-align: center;
+            max-width: 95vw;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            gap: 2rem;
+        }
+
+        .player {
+            padding: 1rem 1.5rem;
+            border-radius: 15px;
+            background: #FFF;
+            border: 3px solid transparent;
+            transition: all 0.3s;
+            min-width: 100px;
+        }
+
+        .player.active {
+            border-color: var(--accent-pink);
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(255, 128, 171, 0.3);
+        }
+
+        .icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .score {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+            background-color: var(--board-color);
+            padding: 8px;
+            border-radius: 10px;
+            margin: 0 auto;
+            width: fit-content;
+            box-shadow: 0 8px 0 #5D4037;
+        }
+
+        .cell {
+            width: 45px;
+            height: 45px;
+            background-color: var(--cell-color);
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .cell:hover {
+            opacity: 0.9;
+        }
+
+        .cell.valid::after {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background-color: rgba(255, 128, 171, 0.6);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+
+        .piece {
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            font-size: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backface-visibility: hidden;
+        }
+
+        /* 3D Flip Effect */
+        .cell.flipping .piece {
+            transform: rotateY(180deg);
+        }
+
+        .status {
+            margin-top: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .btn-reset {
+            margin-top: 1rem;
+            background-color: var(--accent-pink);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 0 #C51162;
+        }
+
+        .btn-reset:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); }
+            to { transform: scale(1); }
+        }
+
+        .winner-text {
+            font-size: 2rem;
+            color: var(--accent-pink);
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 500px) {
+            .cell { width: 38px; height: 38px; }
+            .icon { font-size: 2rem; }
+            .player { padding: 0.5rem 1rem; min-width: 80px; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🍩 おかしなオセロ 🍪</h1>
+
+    <div class="container">
+        <div class="score-board">
+            <div class="player active" id="p1">
+                <span class="icon">🍩</span>
+                <div class="score" id="score1">2</div>
+            </div>
+            <div class="player" id="p2">
+                <span class="icon">🍪</span>
+                <div class="score" id="score2">2</div>
+            </div>
+        </div>
+
+        <div class="board" id="board">
+            <!-- Grid generated by JS -->
+        </div>
+
+        <div class="status" id="status">ドーナツのばんだよ！</div>
+        <button class="btn-reset" onclick="initGame()">もういっかいあそぶ</button>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="winner-text" id="winnerText">勝ったのは...</div>
+            <div id="finalScore" style="font-size: 1.5rem; margin-bottom: 1rem;"></div>
+            <button class="btn-reset" onclick="closeModal()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        const BOARD_SIZE = 8;
+        const EMPTY = 0;
+        const BLACK = 1; // Donut
+        const WHITE = 2; // Cookie
+        
+        let board = [];
+        let currentPlayer = BLACK;
+        let canMove = true;
+
+        const boardElement = document.getElementById('board');
+        const statusElement = document.getElementById('status');
+        const score1Element = document.getElementById('score1');
+        const score2Element = document.getElementById('score2');
+        const p1Element = document.getElementById('p1');
+        const p2Element = document.getElementById('p2');
+        const modal = document.getElementById('modalOverlay');
+
+        function initGame() {
+            board = Array(BOARD_SIZE).fill().map(() => Array(BOARD_SIZE).fill(EMPTY));
+            board[3][3] = WHITE;
+            board[3][4] = BLACK;
+            board[4][3] = BLACK;
+            board[4][4] = WHITE;
+            
+            currentPlayer = BLACK;
+            canMove = true;
+            closeModal();
+            renderBoard();
+            updateUI();
+        }
+
+        function renderBoard() {
+            boardElement.innerHTML = '';
+            const validMoves = getValidMoves(currentPlayer);
+
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+
+                    if (board[r][c] === BLACK) {
+                        cell.innerHTML = '<div class="piece">🍩</div>';
+                    } else if (board[r][c] === WHITE) {
+                        cell.innerHTML = '<div class="piece">🍪</div>';
+                    }
+
+                    if (validMoves.some(m => m.r === r && m.c === c)) {
+                        cell.classList.add('valid');
+                        cell.onclick = () => makeMove(r, c);
+                    }
+
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        function getValidMoves(player) {
+            let moves = [];
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    if (isValidMove(r, c, player)) {
+                        moves.push({r, c});
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function isValidMove(r, c, player) {
+            if (board[r][c] !== EMPTY) return false;
+            const opponent = player === BLACK ? WHITE : BLACK;
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],           [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+
+            for (let [dr, dc] of directions) {
+                let nr = r + dr, nc = c + dc;
+                if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === opponent) {
+                    while (true) {
+                        nr += dr;
+                        nc += dc;
+                        if (nr < 0 || nr >= BOARD_SIZE || nc < 0 || nc >= BOARD_SIZE) break;
+                        if (board[nr][nc] === EMPTY) break;
+                        if (board[nr][nc] === player) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function makeMove(r, c) {
+            if (!canMove) return;
+            
+            board[r][c] = currentPlayer;
+            flipPieces(r, c, currentPlayer);
+            
+            const nextPlayer = currentPlayer === BLACK ? WHITE : BLACK;
+            if (getValidMoves(nextPlayer).length > 0) {
+                currentPlayer = nextPlayer;
+            } else if (getValidMoves(currentPlayer).length === 0) {
+                endGame();
+                return;
+            } else {
+                alert(currentPlayer === BLACK ? "クッキーは置ける場所がないよ！パス！" : "ドーナツは置ける場所がないよ！パス！");
+            }
+            
+            renderBoard();
+            updateUI();
+        }
+
+        function flipPieces(r, c, player) {
+            const opponent = player === BLACK ? WHITE : BLACK;
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],           [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+
+            for (let [dr, dc] of directions) {
+                let flippable = [];
+                let nr = r + dr, nc = c + dc;
+                while (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === opponent) {
+                    flippable.push({r: nr, c: nc});
+                    nr += dr;
+                    nc += dc;
+                }
+                if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === player) {
+                    for (let pos of flippable) {
+                        board[pos.r][pos.c] = player;
+                    }
+                }
+            }
+        }
+
+        function updateUI() {
+            let s1 = 0, s2 = 0;
+            for(let r=0; r<BOARD_SIZE; r++) {
+                for(let c=0; c<BOARD_SIZE; c++) {
+                    if (board[r][c] === BLACK) s1++;
+                    else if (board[r][c] === WHITE) s2++;
+                }
+            }
+            score1Element.textContent = s1;
+            score2Element.textContent = s2;
+
+            if (currentPlayer === BLACK) {
+                statusElement.textContent = "🍩 ドーナツのばん";
+                p1Element.classList.add('active');
+                p2Element.classList.remove('active');
+            } else {
+                statusElement.textContent = "🍪 クッキーのばん";
+                p2Element.classList.add('active');
+                p1Element.classList.remove('active');
+            }
+        }
+
+        function endGame() {
+            canMove = false;
+            updateUI();
+            const s1 = parseInt(score1Element.textContent);
+            const s2 = parseInt(score2Element.textContent);
+            let msg = "";
+            if (s1 > s2) msg = "🍩 ドーナツのかち！ 🎉";
+            else if (s2 > s1) msg = "🍪 クッキーのかち！ 🎉";
+            else msg = "ひきわけ！ 🤝";
+
+            document.getElementById('winnerText').textContent = msg;
+            document.getElementById('finalScore').textContent = `🍩 ${s1} - ${s2} 🍪`;
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            modal.classList.remove('show');
+            if (!canMove) initGame();
+        }
+
+        // Start
+        initGame();
+
+    </script>
+</body>
+</html>
